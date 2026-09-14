@@ -24,6 +24,9 @@ class CrowdinPlugin : Plugin<Project> {
         )
         crowdin.baseUrl.convention("https://api.crowdin.com/api/v2")
         crowdin.resourcesDir.convention(project.layout.projectDirectory.dir("src/main/resources"))
+        crowdin.bundles.convention(
+            project.provider { discoverBundles(crowdin.resourcesDir.get().asFile) },
+        )
         crowdin.sourceLanguage.convention("en")
         crowdin.writeFallbackBundle.convention(true)
         crowdin.skipUntranslatedStrings.convention(false)

@@ -69,7 +69,7 @@ abstract class UpdateTranslationsTask : DefaultTask() {
 
     @TaskAction
     fun updateTranslations() {
-        val bundleNames = bundles.get().also { require(it.isNotEmpty()) { "crowdin.bundles is empty" } }
+        val bundleNames = bundles.get().ifEmpty { noBundles() }
         val api = CrowdinApi(baseUrl.get(), token.orNull.orEmpty().ifEmpty { missing("token", "CROWDIN_TOKEN") })
         val project = projectId.orNull.orEmpty().ifEmpty { missing("projectId", "CROWDIN_PROJECT_ID") }
 
@@ -207,6 +207,13 @@ abstract class UpdateTranslationsTask : DefaultTask() {
             .mapNotNull { resolveTranslationEntry(it.name, bundleNames) }
             .map { it.language }
             .toSortedSet()
+
+    private fun noBundles(): Nothing =
+        throw GradleException(
+            "No bundles found in ${resourcesDir.get().asFile}. Translated files are recognised as " +
+                "<bundle>_<language>.properties with at least $DEFAULT_MINIMUM_LANGUAGES languages; " +
+                "set crowdin.bundles explicitly if yours look different.",
+        )
 
     private fun missing(
         property: String,

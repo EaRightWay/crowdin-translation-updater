@@ -1,5 +1,7 @@
 package io.github.earightway.crowdin
 
+import java.io.File
+
 internal const val PROPERTIES_SUFFIX = ".properties"
 
 internal data class TranslationEntry(val bundle: String, val language: String)
@@ -30,6 +32,28 @@ internal fun bundleFileName(
     bundle: String,
     languageSuffix: String?,
 ): String = if (languageSuffix == null) "$bundle$PROPERTIES_SUFFIX" else "${bundle}_$languageSuffix$PROPERTIES_SUFFIX"
+
+private val LOCALISED_BUNDLE = Regex("""^(.+)_([a-z]{2,3}|[a-z]{2,3}_[A-Za-z]{2,4})\Q$PROPERTIES_SUFFIX\E$""")
+
+/**
+ * Finds the bundles in [directory] by their translations: a name is a bundle when at least
+ * [minimumLanguages] files carry it with a language suffix.
+ *
+ * The threshold is what separates a translated bundle from a file that merely has an underscore in
+ * its name, so a one-off like `mixpanel_ru.properties` is not mistaken for one.
+ */
+internal fun discoverBundles(
+    directory: File,
+    minimumLanguages: Int = DEFAULT_MINIMUM_LANGUAGES,
+): List<String> =
+    directory.listFiles().orEmpty()
+        .mapNotNull { LOCALISED_BUNDLE.matchEntire(it.name) }
+        .groupBy({ it.groupValues[1] }, { it.groupValues[2] })
+        .filterValues { it.distinct().size >= minimumLanguages }
+        .keys
+        .sorted()
+
+const val DEFAULT_MINIMUM_LANGUAGES = 5
 
 /**
  * Line endings to write, since a Crowdin export and the committed file need not agree.

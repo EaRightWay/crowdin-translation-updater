@@ -3,6 +3,8 @@ package io.github.earightway.crowdin
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.io.TempDir
+import java.io.File
 
 class PropertiesBundlesTest {
     private val bundles = listOf("site", "templates", "mail_welcome")
@@ -49,6 +51,31 @@ class PropertiesBundlesTest {
         val raw = "category.food=Cafés\n"
         assertThat(applyLineEndings(escaped, escaped, LineEndings.PRESERVE)).isEqualTo(escaped)
         assertThat(applyLineEndings(raw, raw, LineEndings.PRESERVE)).isEqualTo(raw)
+    }
+
+    @Test
+    fun `finds bundles by the translations sitting next to them`(
+        @TempDir directory: File,
+    ) {
+        listOf("de", "fr", "es", "pt", "zh_CN").forEach { language ->
+            directory.resolve("site_$language.properties").writeText("a=1")
+            directory.resolve("mail_welcome_$language.properties").writeText("a=1")
+        }
+        directory.resolve("site.properties").writeText("a=1")
+        directory.resolve("mixpanel_ru.properties").writeText("a=1")
+        directory.resolve("logback.properties").writeText("a=1")
+
+        assertThat(discoverBundles(directory)).containsExactly("mail_welcome", "site")
+    }
+
+    @Test
+    fun `ignores a name that has too few languages to be a bundle`(
+        @TempDir directory: File,
+    ) {
+        listOf("de", "fr", "es").forEach { directory.resolve("site_$it.properties").writeText("a=1") }
+
+        assertThat(discoverBundles(directory)).isEmpty()
+        assertThat(discoverBundles(directory, minimumLanguages = 3)).containsExactly("site")
     }
 
     @Test

@@ -106,13 +106,43 @@ export CROWDIN_PROJECT_ID=... CROWDIN_TOKEN=...        # personal access token w
 - Both tasks are untracked: they always run, and they never take part in up-to-date checks or the
   build cache.
 
+## Try it
+
+`sample/` is a small consuming build that lives in this repository and resolves the plugin straight
+from the checkout — no publishing, no tag, no version to bump. It owns one bundle (`site`) with a
+committed source file and one committed translation, which is enough to see what a pull would do:
+
+```bash
+export CROWDIN_PROJECT_ID=... CROWDIN_TOKEN=...
+./gradlew -p sample tasks --group crowdin          # both tasks, registered by the plugin
+./gradlew -p sample updateTranslations --report-only
+./gradlew -p sample uploadTranslationSources --report-only
+```
+
+It is a separate build rather than a subproject, because a Gradle build cannot apply a plugin it is
+itself compiling. `sample/settings.gradle.kts` wires the two together:
+
+```kotlin
+pluginManagement {
+    includeBuild("..")
+}
+```
+
+Point `crowdin { projectId }` in `sample/build.gradle.kts` at a project of your own, or leave it to
+the environment variables. Without credentials the tasks fail with the name of what is missing
+rather than with a stack trace.
+
 ## Develop
 
 ```bash
 ./gradlew build        # compiles, validates the task annotations, runs the unit tests
 ```
 
-To try a change from the consuming build without publishing, add the checkout as an included build:
+Changes to the plugin are picked up by `./gradlew -p sample ...` on the next run — the included
+build recompiles first — so the sample doubles as the manual test for a change.
+
+To try a change from a real consuming build without publishing, add the checkout as an included
+build there in the same way:
 
 ```kotlin
 // settings.gradle.kts of the consuming project
