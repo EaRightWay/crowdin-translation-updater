@@ -194,7 +194,11 @@ abstract class UpdateTranslationsTask : DefaultTask() {
     private fun missing(
         property: String,
         environmentVariable: String,
-    ): Nothing = throw GradleException("Crowdin $property is not set. Export $environmentVariable or set crowdin.$property in the build.")
+    ): Nothing =
+        throw GradleException(
+            "Crowdin $property is not set. Export $environmentVariable, add crowdin.$property to ~/.gradle/gradle.properties, " +
+                "or set it in the crowdin { } block.",
+        )
 
     private companion object {
         const val POLL_INTERVAL_MILLIS = 3_000L

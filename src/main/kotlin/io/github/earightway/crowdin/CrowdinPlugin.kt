@@ -14,8 +14,14 @@ import org.gradle.kotlin.dsl.register
 class CrowdinPlugin : Plugin<Project> {
     override fun apply(project: Project) {
         val crowdin = project.extensions.create<CrowdinExtension>("crowdin")
-        crowdin.projectId.convention(project.providers.environmentVariable("CROWDIN_PROJECT_ID"))
-        crowdin.token.convention(project.providers.environmentVariable("CROWDIN_TOKEN"))
+        crowdin.projectId.convention(
+            project.providers.environmentVariable("CROWDIN_PROJECT_ID")
+                .orElse(project.providers.gradleProperty("crowdin.projectId")),
+        )
+        crowdin.token.convention(
+            project.providers.environmentVariable("CROWDIN_TOKEN")
+                .orElse(project.providers.gradleProperty("crowdin.token")),
+        )
         crowdin.baseUrl.convention("https://api.crowdin.com/api/v2")
         crowdin.resourcesDir.convention(project.layout.projectDirectory.dir("src/main/resources"))
         crowdin.sourceLanguage.convention("en")

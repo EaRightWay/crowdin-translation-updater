@@ -46,9 +46,11 @@ The mapping in `resolutionStrategy` is needed because JitPack publishes under th
 
 ```kotlin
 crowdin {
-    // Credentials default to the CROWDIN_PROJECT_ID and CROWDIN_TOKEN environment variables.
+    // Credentials are read from the CROWDIN_PROJECT_ID and CROWDIN_TOKEN environment variables, and
+    // failing that from the crowdin.projectId and crowdin.token Gradle properties
+    // (~/.gradle/gradle.properties keeps them out of the repository). Override here if needed:
     // projectId.set("123456")
-    // token.set(providers.gradleProperty("crowdin.token"))
+    // token.set(providers.gradleProperty("my.own.property"))
 
     bundles.set(listOf("site", "templates", "sms"))
 
