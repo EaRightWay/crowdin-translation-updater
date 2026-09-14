@@ -54,6 +54,9 @@ abstract class UpdateTranslationsTask : DefaultTask() {
     abstract val exportApprovedOnly: Property<Boolean>
 
     @get:Internal
+    abstract val lineEndings: Property<String>
+
+    @get:Internal
     @get:Option(
         option = "language",
         description = "Only write these file suffixes, e.g. --language=de --language=zh_CN. Repeatable.",
@@ -121,7 +124,9 @@ abstract class UpdateTranslationsTask : DefaultTask() {
             generateSequence { zip.nextEntry }
                 .filterNot { it.isDirectory }
                 .forEach { entry ->
-                    val content = zip.readBytes().toString(Charsets.UTF_8)
+                    // ISO-8859-1 maps every byte to one char and back, so the export passes through
+                    // unchanged whether Crowdin escaped it or wrote raw UTF-8.
+                    val content = zip.readBytes().toString(Charsets.ISO_8859_1)
                     val resolved = resolveTranslationEntry(entry.name, bundleNames) ?: return@forEach
                     val suffix = languageMapping.get()[resolved.language] ?: resolved.language.replace('-', '_')
                     if (!accepted(suffix)) return@forEach
@@ -161,8 +166,9 @@ abstract class UpdateTranslationsTask : DefaultTask() {
         content: String,
     ) {
         val target = resourcesDir.get().file(fileName).asFile
-        val escaped = escapeNonAscii(content)
-        if (target.exists() && target.readText(Charsets.ISO_8859_1) == escaped) {
+        val existing = target.takeIf { it.exists() }?.readText(Charsets.ISO_8859_1)
+        val escaped = applyLineEndings(content, existing, LineEndings.of(lineEndings.get()))
+        if (existing == escaped) {
             logger.info("unchanged: $fileName")
             return
         }
@@ -189,7 +195,18 @@ abstract class UpdateTranslationsTask : DefaultTask() {
         bundleNames.filterNot { bundle -> written.keys.any { it.bundle == bundle } }
             .takeIf { it.isNotEmpty() }
             ?.let { logger.warn("No translations exported for: ${it.joinToString()}") }
+
+        val covered = languages + languageAliases.get().keys + sourceLanguage.get()
+        (committedLanguages(bundleNames) - covered)
+            .takeIf { it.isNotEmpty() }
+            ?.let { logger.warn("Committed languages the export does not cover, left untouched: ${it.joinToString()}") }
     }
+
+    private fun committedLanguages(bundleNames: List<String>): Set<String> =
+        resourcesDir.get().asFile.listFiles().orEmpty()
+            .mapNotNull { resolveTranslationEntry(it.name, bundleNames) }
+            .map { it.language }
+            .toSortedSet()
 
     private fun missing(
         property: String,

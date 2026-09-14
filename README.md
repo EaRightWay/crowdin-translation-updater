@@ -59,8 +59,9 @@ crowdin {
     // resourcesDir.set(layout.projectDirectory.dir("src/main/resources"))
     // sourceLanguage.set("en")
     // writeFallbackBundle.set(true)                   // also write site.properties from the source language
-    // skipUntranslatedStrings.set(false)
+    // skipUntranslatedStrings.set(false)         // true omits untranslated keys instead of falling back to English
     // exportApprovedOnly.set(false)
+    // lineEndings.set("preserve")                // or "lf" / "crlf"
 
     // Crowdin language code -> file suffix, where it is not a plain "-" to "_" rewrite.
     languageMapping.set(mapOf("zh-CN" to "zh_CN", "zh-TW" to "zh_TW"))
@@ -86,9 +87,14 @@ export CROWDIN_PROJECT_ID=... CROWDIN_TOKEN=...        # personal access token w
 
 ## Behaviour
 
-- Values are written `\uXXXX`-escaped, the form `java.util.Properties` reads; content Crowdin already
-  exported escaped passes through untouched, so the task is idempotent and produces clean diffs.
+- Content is written byte-for-byte as exported. Whether a file arrives `\uXXXX`-escaped or as raw
+  UTF-8 is a per-file setting in Crowdin, and the plugin does not second-guess it.
+- Line endings follow `lineEndings`: `preserve` (default) keeps what each committed file already
+  uses, so an export that switches from CRLF to LF does not rewrite every file. `lf` and `crlf`
+  force one.
 - Files whose content would not change are left alone, including their timestamps.
+- The report names committed languages the export does not cover, so languages maintained outside
+  Crowdin are visible rather than silently stale.
 - Both Crowdin export layouts are understood — `de/site.properties` (language as a directory) and
   `site_de.properties` (language in the file name) — because the pattern is a Crowdin-side setting.
 - The source-language bundle is the source of truth and is never overwritten unless Crowdin itself

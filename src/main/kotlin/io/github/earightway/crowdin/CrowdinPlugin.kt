@@ -28,6 +28,7 @@ class CrowdinPlugin : Plugin<Project> {
         crowdin.writeFallbackBundle.convention(true)
         crowdin.skipUntranslatedStrings.convention(false)
         crowdin.exportApprovedOnly.convention(false)
+        crowdin.lineEndings.convention("preserve")
 
         project.tasks.register<UpdateTranslationsTask>("updateTranslations") {
             group = TASK_GROUP
@@ -43,6 +44,7 @@ class CrowdinPlugin : Plugin<Project> {
             languageAliases.set(crowdin.languageAliases)
             skipUntranslatedStrings.set(crowdin.skipUntranslatedStrings)
             exportApprovedOnly.set(crowdin.exportApprovedOnly)
+            lineEndings.set(crowdin.lineEndings)
             reportOnly.convention(false)
         }
 

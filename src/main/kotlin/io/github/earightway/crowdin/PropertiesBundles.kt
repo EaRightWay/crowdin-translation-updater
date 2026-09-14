@@ -32,20 +32,40 @@ internal fun bundleFileName(
 ): String = if (languageSuffix == null) "$bundle$PROPERTIES_SUFFIX" else "${bundle}_$languageSuffix$PROPERTIES_SUFFIX"
 
 /**
- * Rewrites every non-ASCII character as a `\ uXXXX` escape, the form `java.util.Properties` reads and
- * the form already committed here. Content that Crowdin exported escaped passes through unchanged.
+ * Line endings to write, since a Crowdin export and the committed file need not agree.
+ *
+ * `PRESERVE` keeps whatever the committed file already uses, which is what keeps a pull from
+ * rewriting every file the first time an export switches from CRLF to LF or back.
  */
-internal fun escapeNonAscii(text: String): String {
-    if (text.all { it.code <= LAST_ASCII }) return text
-    val escaped = StringBuilder(text.length)
-    text.forEach { character ->
-        if (character.code <= LAST_ASCII) {
-            escaped.append(character)
-        } else {
-            escaped.append("\\u").append(String.format("%04x", character.code))
-        }
+enum class LineEndings {
+    PRESERVE,
+    LF,
+    CRLF,
+    ;
+
+    companion object {
+        fun of(name: String): LineEndings =
+            values().firstOrNull { it.name.equals(name, ignoreCase = true) }
+                ?: error("Unknown lineEndings '$name'. Use one of ${values().joinToString { it.name.lowercase() }}.")
     }
-    return escaped.toString()
 }
 
-private const val LAST_ASCII = 126
+/**
+ * Gives [content] the line endings [mode] asks for, reading them off [existing] when preserving.
+ * A file that does not exist yet keeps the endings Crowdin exported.
+ */
+internal fun applyLineEndings(
+    content: String,
+    existing: String?,
+    mode: LineEndings,
+): String {
+    val unix = content.replace("\r\n", "\n")
+    val carriageReturns =
+        when (mode) {
+            LineEndings.LF -> false
+            LineEndings.CRLF -> true
+            LineEndings.PRESERVE -> existing?.contains("\r\n") ?: (unix.length != content.length)
+        }
+    return if (carriageReturns) unix.replace("\n", "\r\n") else unix
+}
+

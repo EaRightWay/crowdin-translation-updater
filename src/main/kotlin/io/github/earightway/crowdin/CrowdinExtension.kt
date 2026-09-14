@@ -57,4 +57,11 @@ abstract class CrowdinExtension {
 
     /** Export only strings that a proofreader approved. */
     abstract val exportApprovedOnly: Property<Boolean>
+
+    /**
+     * Line endings to write: "preserve" (default) keeps what each committed file already uses,
+     * "lf" and "crlf" force one. Preserving stops an export whose endings differ from the repository
+     * from rewriting every file.
+     */
+    abstract val lineEndings: Property<String>
 }

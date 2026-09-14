@@ -1,6 +1,7 @@
 package io.github.earightway.crowdin
 
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
 
 class PropertiesBundlesTest {
@@ -43,15 +44,36 @@ class PropertiesBundlesTest {
     }
 
     @Test
-    fun `escapes non-ascii characters the way java properties files store them`() {
-        assertThat(escapeNonAscii("category.food=Cafés & Bars"))
-            .isEqualTo("category.food=Caf" + backslash + "u00e9s & Bars")
-        assertThat(escapeNonAscii("中文")).isEqualTo("" + backslash + "u4e2d" + backslash + "u6587")
+    fun `passes the export through byte for byte, whatever Crowdin escaped`() {
+        val escaped = "category.food=Caf" + backslash + "u00e9s\n"
+        val raw = "category.food=Cafés\n"
+        assertThat(applyLineEndings(escaped, escaped, LineEndings.PRESERVE)).isEqualTo(escaped)
+        assertThat(applyLineEndings(raw, raw, LineEndings.PRESERVE)).isEqualTo(raw)
     }
 
     @Test
-    fun `leaves already escaped ascii content untouched so the task is idempotent`() {
-        val escaped = "category.food=Caf" + backslash + "u00e9s\r\nkey=value\r\n"
-        assertThat(escapeNonAscii(escaped)).isSameAs(escaped)
+    fun `preserving keeps the endings the committed file already uses`() {
+        assertThat(applyLineEndings("a=1\nb=2\n", "a=0\r\nb=0\r\n", LineEndings.PRESERVE)).isEqualTo("a=1\r\nb=2\r\n")
+        assertThat(applyLineEndings("a=1\r\nb=2\r\n", "a=0\nb=0\n", LineEndings.PRESERVE)).isEqualTo("a=1\nb=2\n")
+    }
+
+    @Test
+    fun `preserving keeps the exported endings when there is no committed file`() {
+        assertThat(applyLineEndings("a=1\r\nb=2\r\n", null, LineEndings.PRESERVE)).isEqualTo("a=1\r\nb=2\r\n")
+        assertThat(applyLineEndings("a=1\nb=2\n", null, LineEndings.PRESERVE)).isEqualTo("a=1\nb=2\n")
+    }
+
+    @Test
+    fun `lf and crlf force the endings whatever the committed file uses`() {
+        assertThat(applyLineEndings("a=1\r\nb=2\r\n", "a=0\r\n", LineEndings.LF)).isEqualTo("a=1\nb=2\n")
+        assertThat(applyLineEndings("a=1\nb=2\n", "a=0\n", LineEndings.CRLF)).isEqualTo("a=1\r\nb=2\r\n")
+    }
+
+    @Test
+    fun `line ending modes are read case-insensitively and bad ones name the alternatives`() {
+        assertThat(LineEndings.of("preserve")).isEqualTo(LineEndings.PRESERVE)
+        assertThat(LineEndings.of("CRLF")).isEqualTo(LineEndings.CRLF)
+        assertThatThrownBy { LineEndings.of("windows") }
+            .hasMessageContaining("preserve, lf, crlf")
     }
 }
