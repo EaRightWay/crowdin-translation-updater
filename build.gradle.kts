@@ -1,6 +1,6 @@
 plugins {
     `kotlin-dsl`
-    id("com.gradle.plugin-publish") version "1.3.1"
+    id("com.gradle.plugin-publish") version "2.2.1"
 }
 
 // Coordinates match the plugin id namespace on the Gradle Plugin Portal. VERSION names the release
@@ -16,6 +16,7 @@ dependencies {
     implementation("com.fasterxml.jackson.core:jackson-databind:2.15.4")
     testImplementation("org.junit.jupiter:junit-jupiter:5.10.2")
     testImplementation("org.assertj:assertj-core:3.27.7")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
 gradlePlugin {
