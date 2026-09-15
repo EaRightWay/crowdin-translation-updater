@@ -12,35 +12,18 @@ project. It works like a code generator: you run a task by hand and commit what 
 
 ## Install
 
-The plugin is served by [JitPack](https://jitpack.io), so the consuming build resolves it straight
-from this repository's tags — no artifact hosting, no credentials.
-
-```kotlin
-// settings.gradle.kts
-pluginManagement {
-    repositories {
-        gradlePluginPortal()
-        maven("https://jitpack.io")
-    }
-    resolutionStrategy {
-        eachPlugin {
-            if (requested.id.id == "io.github.earightway.crowdin") {
-                useModule("com.github.EaRightWay:crowdin-translation-updater:1.0.0")
-            }
-        }
-    }
-}
-```
+The plugin is on the [Gradle Plugin Portal](https://plugins.gradle.org/plugin/io.github.earightway.crowdin),
+which every Gradle build searches by default, so the version is all a consuming build needs:
 
 ```kotlin
 // build.gradle.kts of the module that owns the resource bundles
 plugins {
-    id("io.github.earightway.crowdin")
+    id("io.github.earightway.crowdin") version "1.0.0"
 }
 ```
 
-The mapping in `resolutionStrategy` is needed because JitPack publishes under the
-`com.github.EaRightWay` group rather than under a plugin marker.
+No `pluginManagement` block and no repository declaration: the portal serves a plugin marker that
+maps the id to the module.
 
 ## Configure
 
@@ -153,11 +136,21 @@ pluginManagement {
 
 ## Release
 
-JitPack builds a tag on first request, so a release is just a tag:
+The portal is an upload-based registry — pushing a tag to GitHub publishes nothing. A release is
+`./gradlew publishPlugins`, and [PUBLISHING.md](PUBLISHING.md) has the full procedure: the API key,
+`--validate-only`, and the tag that records what was uploaded.
 
 ```bash
+VERSION=1.0.1 ./gradlew build
+VERSION=1.0.1 ./gradlew publishPlugins --validate-only   # metadata check, uploads nothing
+VERSION=1.0.1 ./gradlew publishPlugins
 git tag 1.0.1 && git push origin 1.0.1
 ```
 
-Then point `useModule(...)` in the consuming build at the new version. Use bare version tags
-(`1.0.1`, not `v1.0.1`) so the tag and the artifact version match.
+Then bump the `version` in the consuming build's `plugins { }` block. Use bare version tags (`1.0.1`,
+not `v1.0.1`) so the tag and the published version match. A published version is permanent: it can be
+deprecated, never deleted or overwritten.
+
+## License
+
+[Apache License 2.0](LICENSE). Copyright 2026 Yevhenii.
