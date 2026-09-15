@@ -20,7 +20,8 @@ internal class CrowdinApi(
 ) {
     private val root = baseUrl.trimEnd('/')
     private val http =
-        HttpClient.newBuilder()
+        HttpClient
+            .newBuilder()
             .connectTimeout(Duration.ofSeconds(CONNECT_TIMEOUT_SECONDS))
             .followRedirects(HttpClient.Redirect.NORMAL)
             .build()
@@ -54,7 +55,12 @@ internal class CrowdinApi(
 
     /** Downloads a temporary export URL. That URL is pre-signed, so it must not carry the token. */
     fun download(url: String): ByteArray {
-        val request = HttpRequest.newBuilder(URI.create(url)).timeout(Duration.ofMinutes(READ_TIMEOUT_MINUTES)).GET().build()
+        val request =
+            HttpRequest
+                .newBuilder(URI.create(url))
+                .timeout(Duration.ofMinutes(READ_TIMEOUT_MINUTES))
+                .GET()
+                .build()
         val response = http.send(request, BodyHandlers.ofByteArray())
         if (response.statusCode() !in SUCCESS) {
             throw GradleException("Crowdin download failed with HTTP ${response.statusCode()}")
@@ -63,7 +69,8 @@ internal class CrowdinApi(
     }
 
     private fun authorized(path: String): HttpRequest.Builder =
-        HttpRequest.newBuilder(URI.create(root + path))
+        HttpRequest
+            .newBuilder(URI.create(root + path))
             .timeout(Duration.ofMinutes(READ_TIMEOUT_MINUTES))
             .header("Authorization", "Bearer $token")
 

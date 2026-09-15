@@ -84,17 +84,22 @@ abstract class UpdateTranslationsTask : DefaultTask() {
         project: String,
     ): String {
         val build =
-            api.post(
-                "/projects/$project/translations/builds",
-                mapOf(
-                    "skipUntranslatedStrings" to skipUntranslatedStrings.get(),
-                    "exportApprovedOnly" to exportApprovedOnly.get(),
-                ),
-            ).requireField("data")
+            api
+                .post(
+                    "/projects/$project/translations/builds",
+                    mapOf(
+                        "skipUntranslatedStrings" to skipUntranslatedStrings.get(),
+                        "exportApprovedOnly" to exportApprovedOnly.get(),
+                    ),
+                ).requireField("data")
         val buildId = build.requireField("id").asLong()
         logger.lifecycle("Crowdin build $buildId requested for project $project")
         awaitBuild(api, project, buildId)
-        return api.get("/projects/$project/translations/builds/$buildId/download").requireField("data").requireField("url").asText()
+        return api
+            .get("/projects/$project/translations/builds/$buildId/download")
+            .requireField("data")
+            .requireField("url")
+            .asText()
     }
 
     private fun awaitBuild(
@@ -150,7 +155,12 @@ abstract class UpdateTranslationsTask : DefaultTask() {
             if (!accepted(alias)) return@forEach
             written.filterKeys { it.language == source }.forEach { (entry, content) ->
                 val fileName = bundleFileName(entry.bundle, alias)
-                if (resourcesDir.get().file(fileName).asFile.exists()) {
+                if (resourcesDir
+                        .get()
+                        .file(fileName)
+                        .asFile
+                        .exists()
+                ) {
                     write(fileName, content)
                 } else {
                     logger.info("skipped absent alias: $fileName")
@@ -192,7 +202,8 @@ abstract class UpdateTranslationsTask : DefaultTask() {
         }
         val languages = written.keys.map { it.language }.toSortedSet()
         logger.lifecycle("${written.size} files across ${languages.size} languages: ${languages.joinToString()}")
-        bundleNames.filterNot { bundle -> written.keys.any { it.bundle == bundle } }
+        bundleNames
+            .filterNot { bundle -> written.keys.any { it.bundle == bundle } }
             .takeIf { it.isNotEmpty() }
             ?.let { logger.warn("No translations exported for: ${it.joinToString()}") }
 
@@ -203,7 +214,11 @@ abstract class UpdateTranslationsTask : DefaultTask() {
     }
 
     private fun committedLanguages(bundleNames: List<String>): Set<String> =
-        resourcesDir.get().asFile.listFiles().orEmpty()
+        resourcesDir
+            .get()
+            .asFile
+            .listFiles()
+            .orEmpty()
             .mapNotNull { resolveTranslationEntry(it.name, bundleNames) }
             .map { it.language }
             .toSortedSet()

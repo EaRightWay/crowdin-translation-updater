@@ -4,7 +4,10 @@ import java.io.File
 
 internal const val PROPERTIES_SUFFIX = ".properties"
 
-internal data class TranslationEntry(val bundle: String, val language: String)
+internal data class TranslationEntry(
+    val bundle: String,
+    val language: String,
+)
 
 /**
  * Maps one entry of a Crowdin translation build to the bundle and language it holds.
@@ -46,14 +49,16 @@ internal fun discoverBundles(
     directory: File,
     minimumLanguages: Int = DEFAULT_MINIMUM_LANGUAGES,
 ): List<String> =
-    directory.listFiles().orEmpty()
+    directory
+        .listFiles()
+        .orEmpty()
         .mapNotNull { LOCALISED_BUNDLE.matchEntire(it.name) }
         .groupBy({ it.groupValues[1] }, { it.groupValues[2] })
         .filterValues { it.distinct().size >= minimumLanguages }
         .keys
         .sorted()
 
-const val DEFAULT_MINIMUM_LANGUAGES = 5
+internal const val DEFAULT_MINIMUM_LANGUAGES = 5
 
 /**
  * Line endings to write, since a Crowdin export and the committed file need not agree.
@@ -61,7 +66,7 @@ const val DEFAULT_MINIMUM_LANGUAGES = 5
  * `PRESERVE` keeps whatever the committed file already uses, which is what keeps a pull from
  * rewriting every file the first time an export switches from CRLF to LF or back.
  */
-enum class LineEndings {
+internal enum class LineEndings {
     PRESERVE,
     LF,
     CRLF,
@@ -92,4 +97,3 @@ internal fun applyLineEndings(
         }
     return if (carriageReturns) unix.replace("\n", "\r\n") else unix
 }
-
