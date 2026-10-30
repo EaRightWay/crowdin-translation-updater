@@ -6,7 +6,7 @@ plugins {
 // Coordinates match the plugin id namespace on the Gradle Plugin Portal. VERSION names the release
 // being published; the fallback keeps local builds and publishToMavenLocal working.
 group = "io.github.earightway"
-version = "1.0.4"
+version = "1.0.5"
 
 repositories {
     mavenCentral()
