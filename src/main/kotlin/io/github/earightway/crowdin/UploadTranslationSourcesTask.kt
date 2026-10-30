@@ -55,7 +55,7 @@ abstract class UploadTranslationSourcesTask : DefaultTask() {
         val selected = bundles.get().filter { bundleFilter.get().isEmpty() || it in bundleFilter.get() }
         if (selected.isEmpty()) throw GradleException("No bundle matches --bundle=${bundleFilter.get().joinToString()}")
 
-        val remoteFiles = remoteFiles(api, project)
+        val remoteFiles = api.files(project)
         selected.forEach { bundle -> upload(api, project, bundle, remoteFiles) }
     }
 
@@ -87,23 +87,6 @@ abstract class UploadTranslationSourcesTask : DefaultTask() {
         logger.lifecycle("uploaded: ${source.name} -> $remoteName")
     }
 
-    private fun remoteFiles(
-        api: CrowdinApi,
-        project: String,
-    ): Map<String, Long> {
-        val files = mutableMapOf<String, Long>()
-        var offset = 0
-        while (true) {
-            val page = api.get("/projects/$project/files?limit=$PAGE_SIZE&offset=$offset").requireField("data")
-            page.elements().forEach { element ->
-                val file = element.requireField("data")
-                files.putIfAbsent(file.requireField("name").asText(), file.requireField("id").asLong())
-            }
-            if (page.size() < PAGE_SIZE) return files
-            offset += PAGE_SIZE
-        }
-    }
-
     private fun missing(
         property: String,
         environmentVariable: String,
@@ -112,8 +95,4 @@ abstract class UploadTranslationSourcesTask : DefaultTask() {
             "Crowdin $property is not set. Export $environmentVariable, add crowdin.$property to ~/.gradle/gradle.properties, " +
                 "or set it in the crowdin { } block.",
         )
-
-    private companion object {
-        const val PAGE_SIZE = 500
-    }
 }

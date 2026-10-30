@@ -7,7 +7,8 @@ project. It works like a code generator: you run a task by hand and commit what 
 
 | Task | Direction |
 |---|---|
-| `updateTranslations` | Crowdin → repository. Builds an export, downloads it, rewrites the translated bundles. |
+| `downloadTranslations` | Crowdin → repository. Builds an export, downloads it, rewrites the translated bundles. Source-language bundles are left alone. |
+| `downloadTranslationsSources` | Crowdin → repository. Downloads only the Crowdin source files into the source-language bundles. |
 | `uploadTranslationSources` | Repository → Crowdin. Uploads the source-language bundles as the Crowdin sources. |
 
 ## Install
@@ -41,7 +42,7 @@ crowdin {
     // baseUrl.set("https://api.crowdin.com/api/v2")   // Crowdin Enterprise: https://<org>.api.crowdin.com/api/v2
     // resourcesDir.set(layout.projectDirectory.dir("src/main/resources"))
     // sourceLanguage.set("en")
-    // writeFallbackBundle.set(true)                   // also write site.properties from the source language
+    // writeFallbackBundle.set(true)                   // downloadTranslationsSources also writes site.properties
     // skipUntranslatedStrings.set(false)         // true omits untranslated keys instead of falling back to English
     // exportApprovedOnly.set(false)
     // lineEndings.set("preserve")                // or "lf" / "crlf"
@@ -61,11 +62,13 @@ crowdin {
 
 ```bash
 export CROWDIN_PROJECT_ID=... CROWDIN_TOKEN=...        # personal access token with project scope
-./gradlew updateTranslations
-./gradlew updateTranslations --report-only             # list what would change, write nothing
-./gradlew updateTranslations --language=de             # one language, repeatable
+./gradlew downloadTranslations
+./gradlew downloadTranslations --report-only           # list what would change, write nothing
+./gradlew downloadTranslations --language=de           # one language, repeatable
 ./gradlew uploadTranslationSources
 ./gradlew uploadTranslationSources --bundle=site       # one bundle, repeatable
+./gradlew downloadTranslationsSources
+./gradlew downloadTranslationsSources --bundle=site    # one bundle, repeatable
 ```
 
 ## Behaviour
@@ -86,7 +89,8 @@ export CROWDIN_PROJECT_ID=... CROWDIN_TOKEN=...        # personal access token w
   bundle the JVM resolves at runtime, which is a decision for the project, not for a sync tool.
 - `uploadTranslationSources` updates existing Crowdin files; it never creates them, since file type
   and export pattern are configured in Crowdin. A missing file fails with the name it looked for.
-- Both tasks are untracked: they always run, and they never take part in up-to-date checks or the
+  `downloadTranslationsSources` looks files up by the same names.
+- All tasks are untracked: they always run, and they never take part in up-to-date checks or the
   build cache.
 
 ## Try it
@@ -97,8 +101,9 @@ committed source file and one committed translation, which is enough to see what
 
 ```bash
 export CROWDIN_PROJECT_ID=... CROWDIN_TOKEN=...
-./gradlew -p sample tasks --group crowdin          # both tasks, registered by the plugin
-./gradlew -p sample updateTranslations --report-only
+./gradlew -p sample tasks --group crowdin          # all tasks, registered by the plugin
+./gradlew -p sample downloadTranslations --report-only
+./gradlew -p sample downloadTranslationsSources --report-only
 ./gradlew -p sample uploadTranslationSources --report-only
 ```
 

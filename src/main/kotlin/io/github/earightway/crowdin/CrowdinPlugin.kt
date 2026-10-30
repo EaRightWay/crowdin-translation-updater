@@ -8,7 +8,8 @@ import org.gradle.kotlin.dsl.register
 /**
  * Adds the translation tasks:
  *
- * - `updateTranslations` pulls the current Crowdin translations into `src/main/resources`
+ * - `downloadTranslations` pulls the current Crowdin translations into `src/main/resources`
+ * - `downloadTranslationsSources` pulls only the Crowdin sources into the English bundles
  * - `uploadTranslationSources` pushes the English bundles back up as the Crowdin sources
  */
 class CrowdinPlugin : Plugin<Project> {
@@ -35,7 +36,7 @@ class CrowdinPlugin : Plugin<Project> {
         crowdin.exportApprovedOnly.convention(false)
         crowdin.lineEndings.convention("preserve")
 
-        project.tasks.register<UpdateTranslationsTask>("updateTranslations") {
+        project.tasks.register<DownloadTranslationsTask>("downloadTranslations") {
             group = TASK_GROUP
             description = "Downloads the Crowdin translations into src/main/resources"
             projectId.set(crowdin.projectId)
@@ -44,7 +45,6 @@ class CrowdinPlugin : Plugin<Project> {
             resourcesDir.set(crowdin.resourcesDir)
             bundles.set(crowdin.bundles)
             sourceLanguage.set(crowdin.sourceLanguage)
-            writeFallbackBundle.set(crowdin.writeFallbackBundle)
             languageMapping.set(crowdin.languageMapping)
             languageAliases.set(crowdin.languageAliases)
             skipUntranslatedStrings.set(crowdin.skipUntranslatedStrings)
@@ -63,6 +63,21 @@ class CrowdinPlugin : Plugin<Project> {
             bundles.set(crowdin.bundles)
             sourceLanguage.set(crowdin.sourceLanguage)
             sourceFileNames.set(crowdin.sourceFileNames)
+            reportOnly.convention(false)
+        }
+
+        project.tasks.register<DownloadTranslationSourcesTask>("downloadTranslationsSources") {
+            group = TASK_GROUP
+            description = "Downloads the Crowdin source files into the English bundles"
+            projectId.set(crowdin.projectId)
+            token.set(crowdin.token)
+            baseUrl.set(crowdin.baseUrl)
+            resourcesDir.set(crowdin.resourcesDir)
+            bundles.set(crowdin.bundles)
+            sourceLanguage.set(crowdin.sourceLanguage)
+            sourceFileNames.set(crowdin.sourceFileNames)
+            writeFallbackBundle.set(crowdin.writeFallbackBundle)
+            lineEndings.set(crowdin.lineEndings)
             reportOnly.convention(false)
         }
     }

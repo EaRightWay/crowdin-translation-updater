@@ -53,6 +53,21 @@ internal class CrowdinApi(
         return send(request, "POST", "/storages").requireField("data").requireField("id").asLong()
     }
 
+    /** Maps the name of every source file in [project] to its id, keeping the first on a name clash. */
+    fun files(project: String): Map<String, Long> {
+        val files = mutableMapOf<String, Long>()
+        var offset = 0
+        while (true) {
+            val page = get("/projects/$project/files?limit=$PAGE_SIZE&offset=$offset").requireField("data")
+            page.elements().forEach { element ->
+                val file = element.requireField("data")
+                files.putIfAbsent(file.requireField("name").asText(), file.requireField("id").asLong())
+            }
+            if (page.size() < PAGE_SIZE) return files
+            offset += PAGE_SIZE
+        }
+    }
+
     /** Downloads a temporary export URL. That URL is pre-signed, so it must not carry the token. */
     fun download(url: String): ByteArray {
         val request =
@@ -95,6 +110,7 @@ internal class CrowdinApi(
         const val CONNECT_TIMEOUT_SECONDS = 30L
         const val READ_TIMEOUT_MINUTES = 5L
         const val ERROR_BODY_LIMIT = 1000
+        const val PAGE_SIZE = 500
     }
 }
 

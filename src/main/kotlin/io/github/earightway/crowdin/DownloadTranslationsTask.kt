@@ -15,11 +15,12 @@ import java.util.zip.ZipInputStream
 
 /**
  * Downloads the current Crowdin translations and rewrites the `<bundle>_<language>.properties` files.
+ * The source-language bundles are left alone; `downloadTranslationsSources` writes those.
  *
  * Run it by hand and commit the result, the same way `generateJooq` regenerates `src/main/jooq`.
  */
 @UntrackedTask(because = "Reads the current state of Crowdin and rewrites committed resources")
-abstract class UpdateTranslationsTask : DefaultTask() {
+abstract class DownloadTranslationsTask : DefaultTask() {
     @get:Internal
     abstract val projectId: Property<String>
 
@@ -37,9 +38,6 @@ abstract class UpdateTranslationsTask : DefaultTask() {
 
     @get:Internal
     abstract val sourceLanguage: Property<String>
-
-    @get:Internal
-    abstract val writeFallbackBundle: Property<Boolean>
 
     @get:Internal
     abstract val languageMapping: MapProperty<String, String>
@@ -68,7 +66,7 @@ abstract class UpdateTranslationsTask : DefaultTask() {
     abstract val reportOnly: Property<Boolean>
 
     @TaskAction
-    fun updateTranslations() {
+    fun downloadTranslations() {
         val bundleNames = bundles.get().ifEmpty { noBundles() }
         val api = CrowdinApi(baseUrl.get(), token.orNull.orEmpty().ifEmpty { missing("token", "CROWDIN_TOKEN") })
         val project = projectId.orNull.orEmpty().ifEmpty { missing("projectId", "CROWDIN_PROJECT_ID") }
@@ -134,12 +132,10 @@ abstract class UpdateTranslationsTask : DefaultTask() {
                     val content = zip.readBytes().toString(Charsets.ISO_8859_1)
                     val resolved = resolveTranslationEntry(entry.name, bundleNames) ?: return@forEach
                     val suffix = languageMapping.get()[resolved.language] ?: resolved.language.replace('-', '_')
-                    if (!accepted(suffix)) return@forEach
+                    // Source bundles belong to downloadTranslationsSources.
+                    if (suffix == sourceLanguage.get() || !accepted(suffix)) return@forEach
                     write(bundleFileName(resolved.bundle, suffix), content)
                     written[TranslationEntry(resolved.bundle, suffix)] = content
-                    if (suffix == sourceLanguage.get() && writeFallbackBundle.get()) {
-                        write(bundleFileName(resolved.bundle, null), content)
-                    }
                 }
         }
         return written
